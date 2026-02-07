@@ -1,10 +1,3 @@
----
-
-## 📄 `docs/architecture/02-network-and-security.md` (fixed formatting)
-
-```markdown
-# Network and Security Boundaries
-
 This document describes the **trust zones** of the system and the enforced
 security boundaries.
 
