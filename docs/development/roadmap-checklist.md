@@ -3,6 +3,7 @@
 This document is the **execution plan** for building the Deep Learning Text-to-Speech web application.
 
 It complements:
+
 - `docs/product/roadmap.md` (feature direction / product evolution)
 - `docs/architecture/*` (system design and decisions)
 
@@ -13,21 +14,27 @@ Here we focus on **what to build, in what order, and how to validate each stage*
 ## Guiding principles
 
 ### Pedagogical objective (primary)
+
 We intentionally choose solutions that maximize learning:
+
 - infrastructure fundamentals (VPS, reverse proxy, TLS),
 - API design and service boundaries,
 - model serving constraints (latency, caching, quotas),
 - production concerns (logging, monitoring, costs).
 
 ### Portfolio objective
+
 We build a repository that looks like a real production project:
+
 - clean commits,
 - documented milestones,
 - reproducible setup,
 - clear architecture and decision records.
 
 ### Product objective (optional)
+
 We keep the architecture extensible:
+
 - model abstraction,
 - S3 storage pipeline,
 - user + billing layer,
@@ -39,10 +46,12 @@ We keep the architecture extensible:
 
 We use Git tags to mark “stable milestones” (immutable checkpoints).
 Recommended format:
+
 - `milestone-<short-name>`
 - or semantic releases later: `v0.1.0`, `v0.2.0`, …
 
 ### Tag-worthy milestones (recommended)
+
 - `milestone-kokoro-local-validation` — Kokoro works locally with baseline measurements
 - `milestone-fastapi-local` — FastAPI `/tts` works locally and returns audio
 - `milestone-react-mvp-local` — React MVP works locally end-to-end
@@ -61,28 +70,31 @@ Recommended format:
 ## Phase 1 — Foundation ✅
 
 ### Goals
+
 - clear architecture and scope
 - clean repo structure and documentation
 - dev environment ready
 
 ### Checklist
+
 - [x] repository initialized
 - [x] docs structure created (`docs/architecture`, `docs/product`)
 - [x] README links to docs
 - [x] initial architecture diagrams written (Mermaid)
 - [x] tooling configured (VS Code, formatting, Python version pinned)
 
-
 ---
 
 ## Phase 2 — Local model validation ✅ (Kokoro)
 
 ### Goals
+
 - confirm the model works locally
 - test multiple voices and at least 2 languages
 - record baseline latency and quality notes
 
 ### Checklist
+
 - [x] install dependencies (`kokoro`, `soundfile`, `misaki[en]`, `espeak-ng`)
 - [x] run smoke test and generate WAV output
 - [x] test multiple voices (`af_*`, `bf_*`, `ff_siwis`)
@@ -90,39 +102,61 @@ Recommended format:
 - [x] write local testing docs and README in `services/tts_local`
 
 ### Deliverables
+
 - `services/tts_local/run_kokoro_smoketest.py`
 - `services/tts_local/README.md`
 - `docs/development/01-kokoro-local-validation.md`
 
 ### Tag
+
 - `milestone-kokoro-local-validation`
 
 ---
 
-## Phase 3 — Expose Kokoro via FastAPI (local)
+## Phase 3 — Expose Kokoro via FastAPI (local) ✅
 
 ### Goals
+
 - provide a stable HTTP API to generate audio
-- enable manual testing via curl/Postman
-- set foundation for production deployment later
+- enable manual testing via curl, browser, and Swagger
+- establish a clean inference service boundary for later deployment
 
 ### Checklist
-- [ ] create service skeleton: `services/tts_api/`
-- [ ] implement `/health`
-- [ ] implement `POST /tts`
-  - [ ] input validation (max chars, empty text)
-  - [ ] parameters: `voice`, `lang`, `speed`
-  - [ ] output: `audio/wav` response (bytes) OR signed URL later
-- [ ] logging (request id, latency, chars)
-- [ ] error handling and consistent response errors
-- [ ] basic rate-limit placeholder (later enforced by Express)
+
+- [x] create service skeleton: `services/tts_api/`
+- [x] configuration separated (`config.py`)
+- [x] implement `/health`
+- [x] implement `POST /tts`
+  - [x] input validation (max chars, empty text)
+  - [x] parameters: `voice`, `lang`, `speed`
+  - [x] output: `audio/wav` (binary, PCM 16-bit, browser-compatible)
+- [x] implement `GET /tts/preview` (query-based, browser-friendly)
+- [x] logging:
+  - [x] request id
+  - [x] latency
+  - [x] char count
+- [x] error handling with consistent HTTP status codes
+- [x] OpenAPI documentation verified (`/docs`, `/redoc`)
 
 ### Manual testing
-- [ ] Postman / curl request succeeds
-- [ ] audio plays and downloads correctly
-- [ ] verify boundary cases (empty text, too long, unsupported voice/lang)
+
+- [x] curl request succeeds
+- [x] Swagger UI preview works
+- [x] audio plays in browser
+- [x] audio downloads correctly
+- [x] boundary cases tested (empty text, too long, mismatched voice/lang)
+
+### Deliverables
+
+- `services/tts_api/app/main.py`
+- `services/tts_api/app/kokoro_engine.py`
+- `services/tts_api/app/schemas.py`
+- `services/tts_api/app/config.py`
+- `services/tts_api/app/validation.py`
+- `services/tts_api/README.md`
 
 ### Tag
+
 - `milestone-fastapi-local`
 
 ---
@@ -130,10 +164,12 @@ Recommended format:
 ## Phase 4 — Minimal React MVP (local first)
 
 ### Goals
+
 - minimal UI that proves the product loop:
   text → generate → play → download
 
 ### Checklist
+
 - [ ] create React app with Vite
 - [ ] UI elements:
   - [ ] text input
@@ -148,6 +184,7 @@ Recommended format:
 - [ ] enforce max chars client-side (matches server)
 
 ### Tag
+
 - `milestone-react-mvp-local`
 
 ---
@@ -155,11 +192,13 @@ Recommended format:
 ## Phase 5 — Web deployment on VPS (frontend + Express)
 
 ### Goals
+
 - put a real web app online on your own infrastructure
 - introduce reverse proxy + process manager
 - keep ML service separate (still local or staging at first)
 
 ### Checklist
+
 - [ ] create Express API skeleton (`services/web_api` or similar)
 - [ ] VPS setup:
   - [ ] SSH access + basic hardening
@@ -173,6 +212,7 @@ Recommended format:
   - [ ] `/api/*` → Express
 
 ### Tag
+
 - `milestone-vps-deploy-web`
 
 ---
@@ -180,9 +220,11 @@ Recommended format:
 ## Phase 6 — Domain + HTTPS
 
 ### Goals
+
 - professional URL and TLS everywhere
 
 ### Checklist
+
 - [ ] buy domain
 - [ ] DNS records:
   - [ ] A record → VPS IP
@@ -191,6 +233,7 @@ Recommended format:
 - [ ] redirect HTTP → HTTPS
 
 ### Tag
+
 - `milestone-domain-https`
 
 ---
@@ -198,11 +241,13 @@ Recommended format:
 ## Phase 7 — Production-grade inference deployment (EC2 + Docker)
 
 ### Goals
+
 - run FastAPI + Kokoro on a dedicated inference server
 - containerized and reproducible
 - restricted access (only VPS can call it)
 
 ### Checklist
+
 - [ ] create Dockerfile for `tts_api`
 - [ ] build and run locally with Docker
 - [ ] provision EC2 instance (GPU optional)
@@ -215,6 +260,7 @@ Recommended format:
   - [ ] Express (VPS) → FastAPI (EC2)
 
 ### Tag
+
 - `milestone-ec2-inference`
 
 ---
@@ -222,11 +268,13 @@ Recommended format:
 ## Phase 8 — MVP online (anonymous quota + S3)
 
 ### Goals
+
 - “real product loop” online
 - anonymous usage allowed with quota enforcement
 - audio stored and served securely
 
 ### Checklist
+
 - [ ] quota system (characters) for anonymous users
 - [ ] persist generated audio in S3
 - [ ] return signed URLs for download
@@ -234,6 +282,7 @@ Recommended format:
 - [ ] minimal UI polish (errors, loading, empty state)
 
 ### Tag
+
 - `milestone-mvp-online`
 
 ---
@@ -241,10 +290,12 @@ Recommended format:
 ## Phase 9 — Product expansion (accounts + payments + premium)
 
 ### Goals
+
 - user system and monetization
 - prepare for voice cloning later
 
 ### Checklist
+
 - [ ] landing page + product messaging
 - [ ] user accounts (email/pass or OAuth)
 - [ ] user quota tiers
@@ -252,6 +303,7 @@ Recommended format:
 - [ ] usage dashboard (quota, history, billing)
 
 ### Tags
+
 - `milestone-auth`
 - `milestone-stripe`
 
@@ -260,10 +312,12 @@ Recommended format:
 ## Phase 10 — Voice cloning (later)
 
 ### Candidates
+
 - XTTS v2
 - OpenVoice
 
 ### Checklist
+
 - [ ] licensing review before monetized deployment
 - [ ] add voice upload + consent UX
 - [ ] new inference service or model abstraction extension
@@ -271,6 +325,7 @@ Recommended format:
 - [ ] “my voices” management UI
 
 ### Tag
+
 - `milestone-voice-cloning`
 
 ---
@@ -278,6 +333,7 @@ Recommended format:
 ## Upcoming features list (explicit)
 
 ### Near-term (after MVP is online)
+
 - landing page + messaging
 - better quota enforcement (anonymous + logged-in)
 - basic admin controls (limits, abuse handling)
@@ -285,11 +341,13 @@ Recommended format:
 - error reporting + basic monitoring
 
 ### Monetization features
+
 - Stripe subscriptions/credits
 - premium tier: higher limits + more voices
 - usage dashboard (quota/history/billing)
 
 ### Advanced / later
+
 - voice cloning
 - streaming generation (optional)
 - public API keys + developer portal
@@ -300,6 +358,7 @@ Recommended format:
 ---
 
 ## Optional bonus extensions (kept separate)
+
 - CI/CD pipelines
 - automated tests
 - observability stack (metrics, traces)
