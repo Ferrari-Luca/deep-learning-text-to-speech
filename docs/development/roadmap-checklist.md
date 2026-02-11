@@ -45,108 +45,89 @@ We keep the architecture extensible:
 ## Milestones & Git tags
 
 We use Git tags to mark “stable milestones” (immutable checkpoints).
+
 Recommended format:
 
 - `milestone-<short-name>`
 - or semantic releases later: `v0.1.0`, `v0.2.0`, …
 
-### Tag-worthy milestones (recommended)
+### Tag-worthy milestones
 
-- `milestone-kokoro-local-validation` — Kokoro works locally with baseline measurements
-- `milestone-fastapi-local` — FastAPI `/tts` works locally and returns audio
-- `milestone-react-mvp-local` — React MVP works locally end-to-end
-- `milestone-vps-deploy-web` — frontend+express deployed on VPS behind reverse proxy
-- `milestone-domain-https` — domain + HTTPS on VPS
-- `milestone-ec2-inference` — FastAPI inference running on EC2 via Docker
-- `milestone-mvp-online` — full MVP usable online (anonymous quota + download)
-- `milestone-auth` — user accounts live
-- `milestone-stripe` — payments live
-- `milestone-voice-cloning` — voice cloning integrated (later)
+- `milestone-kokoro-local-validation`
+- `milestone-fastapi-local`
+- `milestone-react-mvp-local`
+- `milestone-frontend-refactor-config`
+- `milestone-vps-deploy-web`
+- `milestone-domain-https`
+- `milestone-ec2-inference`
+- `milestone-mvp-online`
+- `milestone-auth`
+- `milestone-stripe`
+- `milestone-voice-cloning`
 
 > Rule: tag only when the milestone is **working, documented, and reproducible**.
 
 ---
 
-## Phase 1 — Foundation ✅
+# Phase 1 — Foundation ✅
 
-### Goals
+## Goals
 
 - clear architecture and scope
 - clean repo structure and documentation
 - dev environment ready
 
-### Checklist
+## Checklist
 
 - [x] repository initialized
-- [x] docs structure created (`docs/architecture`, `docs/product`)
+- [x] docs structure created
 - [x] README links to docs
-- [x] initial architecture diagrams written (Mermaid)
-- [x] tooling configured (VS Code, formatting, Python version pinned)
+- [x] architecture diagrams written (Mermaid)
+- [x] tooling configured
 
 ---
 
-## Phase 2 — Local model validation ✅ (Kokoro)
+# Phase 2 — Local Model Validation (Kokoro) ✅
 
-### Goals
+## Goals
 
 - confirm the model works locally
-- test multiple voices and at least 2 languages
-- record baseline latency and quality notes
+- test multiple voices and languages
+- record baseline latency and quality
 
-### Checklist
-
-- [x] install dependencies (`kokoro`, `soundfile`, `misaki[en]`, `espeak-ng`)
-- [x] run smoke test and generate WAV output
-- [x] test multiple voices (`af_*`, `bf_*`, `ff_siwis`)
-- [x] record baseline timing + notes
-- [x] write local testing docs and README in `services/tts_local`
-
-### Deliverables
+## Deliverables
 
 - `services/tts_local/run_kokoro_smoketest.py`
 - `services/tts_local/README.md`
 - `docs/development/01-kokoro-local-validation.md`
 
-### Tag
+## Tag
 
 - `milestone-kokoro-local-validation`
 
 ---
 
-## Phase 3 — Expose Kokoro via FastAPI (local) ✅
+# Phase 3 — FastAPI Local Inference Service ✅
 
-### Goals
+## Goals
 
-- provide a stable HTTP API to generate audio
-- enable manual testing via curl, browser, and Swagger
-- establish a clean inference service boundary for later deployment
+- expose Kokoro through a clean HTTP API
+- validate inputs
+- return browser-compatible WAV
 
-### Checklist
+## Completed Features
 
-- [x] create service skeleton: `services/tts_api/`
-- [x] configuration separated (`config.py`)
-- [x] implement `/health`
-- [x] implement `POST /tts`
-  - [x] input validation (max chars, empty text)
-  - [x] parameters: `voice`, `lang`, `speed`
-  - [x] output: `audio/wav` (binary, PCM 16-bit, browser-compatible)
-- [x] implement `GET /tts/preview` (query-based, browser-friendly)
-- [x] logging:
-  - [x] request id
-  - [x] latency
-  - [x] char count
-- [x] error handling with consistent HTTP status codes
-- [x] OpenAPI documentation verified (`/docs`, `/redoc`)
+- `/health`
+- `POST /tts`
+- `GET /tts/preview`
+- server-side validation
+- structured logging
+- OpenAPI docs
+- consistent error handling
+- PCM 16-bit WAV output
+- latency + request id headers
 
-### Manual testing
-
-- [x] curl request succeeds
-- [x] Swagger UI preview works
-- [x] audio plays in browser
-- [x] audio downloads correctly
-- [x] boundary cases tested (empty text, too long, mismatched voice/lang)
-
-### Deliverables
+## Deliverables
 
 - `services/tts_api/app/main.py`
 - `services/tts_api/app/kokoro_engine.py`
@@ -155,212 +136,208 @@ Recommended format:
 - `services/tts_api/app/validation.py`
 - `services/tts_api/README.md`
 
-### Tag
+## Tag
 
 - `milestone-fastapi-local`
 
 ---
 
-## Phase 4 — Minimal React MVP (local first)
+# Phase 4 — Minimal React MVP (Local) ✅
 
-### Goals
+## Goals
 
-- minimal UI that proves the product loop:
-  text → generate → play → download
+Prove the full product loop locally:
 
-### Checklist
+```
+Text → Generate → Play → Download
+```
 
-- [ ] create React app with Vite
-- [ ] UI elements:
-  - [ ] text input
-  - [ ] voice select (curated list)
-  - [ ] generate button
-  - [ ] audio player
-  - [ ] download button
-- [ ] connect React → FastAPI
-  - [ ] POST request to `/tts`
-  - [ ] handle `audio/wav` response
-  - [ ] show loading/error state
-- [ ] enforce max chars client-side (matches server)
+## Completed Features
 
-### Tag
+- Vite + React + TypeScript setup
+- Text input with character counter
+- Curated voice selector
+- Speed control
+- Generate button
+- Loading + error states
+- Proper binary `audio/wav` handling (Blob + object URL)
+- `<audio>` playback
+- Download button
+- Header extraction (`X-Request-Id`, latency)
+- Client-side validation aligned with backend
+
+## Deliverables
+
+- `web/tts_web/`
+- `src/api/tts.ts`
+- functional React UI
+- local end-to-end validation
+
+## Tag
 
 - `milestone-react-mvp-local`
 
 ---
 
-## Phase 5 — Web deployment on VPS (frontend + Express)
+# Phase 4.5 — Frontend Architecture Refactor + Authoritative Config 🔄
 
-### Goals
+## Goals
 
-- put a real web app online on your own infrastructure
-- introduce reverse proxy + process manager
-- keep ML service separate (still local or staging at first)
+Prepare frontend and backend for production separation and long-term scalability.
 
-### Checklist
+## Backend Tasks
 
-- [ ] create Express API skeleton (`services/web_api` or similar)
-- [ ] VPS setup:
-  - [ ] SSH access + basic hardening
-  - [ ] install Node.js
-  - [ ] install Nginx or Caddy
-  - [ ] install PM2
-- [ ] deploy React build and serve with Nginx
-- [ ] run Express with PM2
-- [ ] configure reverse proxy:
-  - [ ] `/` → React static
-  - [ ] `/api/*` → Express
+- [ ] Add `GET /config` endpoint
+  - expose:
+    - max_chars
+    - min_speed
+    - max_speed
+    - default values
+    - curated voice list
+- [ ] Keep backend authoritative for all constraints
 
-### Tag
+## Frontend Tasks
+
+- [ ] Split components:
+  - `TtsForm`
+  - `VoiceSelect`
+  - `AudioPlayer`
+- [ ] Extract runtime configuration handling
+- [ ] Fetch limits from `/config`
+- [ ] Remove hardcoded MAX_CHARS / speed bounds
+- [ ] Move API base URL to environment variable
+- [ ] Add `.env.local`
+- [ ] Prepare support for `/api` proxy
+- [ ] Optional: add Vite dev proxy
+
+## Deliverables
+
+- `GET /config` endpoint
+- `src/components/`
+- `src/types/`
+- `src/config/appConfig.ts`
+- `.env.local`
+- env-based API base handling
+- future-ready `/api` abstraction
+
+## Tag
+
+- `milestone-frontend-refactor-config`
+
+---
+
+# Phase 5 — VPS Deployment (Frontend + Express)
+
+## Goals
+
+- deploy real web app on own infrastructure
+- introduce public API layer (Express)
+- keep ML inference private
+
+## Checklist
+
+- [ ] Create Express API skeleton
+- [ ] VPS setup
+- [ ] Install Node.js
+- [ ] Install Nginx or Caddy
+- [ ] Install PM2
+- [ ] Deploy React build
+- [ ] Reverse proxy:
+  - `/` → React
+  - `/api/*` → Express
+
+## Tag
 
 - `milestone-vps-deploy-web`
 
 ---
 
-## Phase 6 — Domain + HTTPS
+# Phase 6 — Domain + HTTPS
 
-### Goals
+## Goals
 
-- professional URL and TLS everywhere
+- production-ready domain
+- full HTTPS
 
-### Checklist
+## Checklist
 
-- [ ] buy domain
-- [ ] DNS records:
-  - [ ] A record → VPS IP
-- [ ] configure Nginx/Caddy server_name
-- [ ] Let’s Encrypt cert
-- [ ] redirect HTTP → HTTPS
+- [ ] Buy domain
+- [ ] Configure DNS
+- [ ] Configure reverse proxy
+- [ ] Install Let’s Encrypt
+- [ ] Force HTTPS redirect
 
-### Tag
+## Tag
 
 - `milestone-domain-https`
 
 ---
 
-## Phase 7 — Production-grade inference deployment (EC2 + Docker)
+# Phase 7 — Production Inference Deployment (EC2 + Docker)
 
-### Goals
+## Goals
 
-- run FastAPI + Kokoro on a dedicated inference server
-- containerized and reproducible
-- restricted access (only VPS can call it)
+- dedicated inference server
+- containerized FastAPI
+- restricted network access
 
-### Checklist
+## Checklist
 
-- [ ] create Dockerfile for `tts_api`
-- [ ] build and run locally with Docker
-- [ ] provision EC2 instance (GPU optional)
-- [ ] install Docker + Docker Compose
-- [ ] deploy container
-- [ ] open only necessary ports in security group
-- [ ] restrict inbound access to the VPS IP
-- [ ] optionally add reverse proxy on EC2 (TLS termination or internal only)
-- [ ] connect:
-  - [ ] Express (VPS) → FastAPI (EC2)
+- [ ] Dockerize `tts_api`
+- [ ] Provision EC2
+- [ ] Install Docker
+- [ ] Restrict inbound traffic to VPS IP
+- [ ] Connect Express → FastAPI
 
-### Tag
+## Tag
 
 - `milestone-ec2-inference`
 
 ---
 
-## Phase 8 — MVP online (anonymous quota + S3)
+# Phase 8 — MVP Online (Anonymous Quota + S3)
 
-### Goals
+## Goals
 
-- “real product loop” online
-- anonymous usage allowed with quota enforcement
-- audio stored and served securely
+- anonymous quota system
+- secure audio storage
+- basic abuse protection
 
-### Checklist
+## Checklist
 
-- [ ] quota system (characters) for anonymous users
-- [ ] persist generated audio in S3
-- [ ] return signed URLs for download
-- [ ] basic abuse protection (rate limits, max chars)
-- [ ] minimal UI polish (errors, loading, empty state)
+- [ ] Anonymous cookie + IP identification
+- [ ] Daily quota enforcement
+- [ ] Rate limiting
+- [ ] Store audio in S3
+- [ ] Signed download URLs
 
-### Tag
+## Tag
 
 - `milestone-mvp-online`
 
 ---
 
-## Phase 9 — Product expansion (accounts + payments + premium)
+# Phase 9 — Accounts + Payments
 
-### Goals
+- [ ] User accounts
+- [ ] Quota tiers
+- [ ] Stripe integration
+- [ ] Usage dashboard
 
-- user system and monetization
-- prepare for voice cloning later
-
-### Checklist
-
-- [ ] landing page + product messaging
-- [ ] user accounts (email/pass or OAuth)
-- [ ] user quota tiers
-- [ ] Stripe checkout + webhooks
-- [ ] usage dashboard (quota, history, billing)
-
-### Tags
+## Tags
 
 - `milestone-auth`
 - `milestone-stripe`
 
 ---
 
-## Phase 10 — Voice cloning (later)
+# Phase 10 — Voice Cloning
 
-### Candidates
+- [ ] Licensing review
+- [ ] Voice upload system
+- [ ] Secure reference storage
+- [ ] New inference integration
 
-- XTTS v2
-- OpenVoice
-
-### Checklist
-
-- [ ] licensing review before monetized deployment
-- [ ] add voice upload + consent UX
-- [ ] new inference service or model abstraction extension
-- [ ] storage for reference audio (secure)
-- [ ] “my voices” management UI
-
-### Tag
+## Tag
 
 - `milestone-voice-cloning`
-
----
-
-## Upcoming features list (explicit)
-
-### Near-term (after MVP is online)
-
-- landing page + messaging
-- better quota enforcement (anonymous + logged-in)
-- basic admin controls (limits, abuse handling)
-- S3 storage + signed URLs
-- error reporting + basic monitoring
-
-### Monetization features
-
-- Stripe subscriptions/credits
-- premium tier: higher limits + more voices
-- usage dashboard (quota/history/billing)
-
-### Advanced / later
-
-- voice cloning
-- streaming generation (optional)
-- public API keys + developer portal
-- CI/CD
-- monitoring and observability
-- model optimization (ONNX, batching, caching, cost tuning)
-
----
-
-## Optional bonus extensions (kept separate)
-
-- CI/CD pipelines
-- automated tests
-- observability stack (metrics, traces)
-- product analytics
-- security hardening and scalability
